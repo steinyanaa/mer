@@ -57,7 +57,7 @@ extension Loc {
         "Grab a still at a given second": "截取指定秒数的画面", "Keeps quality, format unchanged": "保持画质，格式不变",
 
         // parameter labels
-        "Start (s)": "开始（秒）", "End (s, 0 = until the end)": "结束（秒，0 = 到结尾）", "Password": "密码",
+        "Start (s)": "开始（秒）", "Password (leave empty if none)": "密码（没有就留空）", "End (s, 0 = until the end)": "结束（秒，0 = 到结尾）", "Password": "密码",
         "Start (hh:mm:ss or seconds)": "开始（时:分:秒 或 秒数）", "End (hh:mm:ss or seconds)": "结束（时:分:秒 或 秒数）",
         "Longest side (px)": "最长边（像素）", "Quality (1–100)": "质量（1–100）", "Pages": "页码",
         "Width (px)": "宽度（像素）", "Frames per second": "每秒帧数", "Time (s)": "时间（秒）",

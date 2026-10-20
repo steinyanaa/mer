@@ -19,7 +19,8 @@ final class HUDController: ObservableObject {
             if case .done = job.state, AppSettings.shared.revealWhenDone, !job.outputs.isEmpty {
                 NSWorkspace.shared.activateFileViewerSelecting(job.outputs)
             }
-            self.scheduleHide()
+            if case .failed = job.state { self.scheduleHide(after: 20) }   // errors must be readable, not flash by
+            else { self.scheduleHide() }
         }
     }
 
@@ -145,6 +146,9 @@ struct JobRow: View {
                 .buttonStyle(.borderless).help(Loc.t("Reveal in Finder"))
         case .running, .queued:
             Button { job.cancel() } label: { Image(systemName: "xmark") }.buttonStyle(.borderless).help(Loc.t("Cancel"))
+        case .failed:
+            Button { JobCenter.shared.dismiss(job) } label: { Image(systemName: "xmark.circle.fill") }
+                .buttonStyle(.borderless).foregroundStyle(.secondary).help(Loc.t("Dismiss"))
         default: EmptyView()
         }
     }

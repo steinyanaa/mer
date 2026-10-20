@@ -117,6 +117,10 @@ public final class JobCenter: ObservableObject {
         objectWillChange.send()
     }
 
+    public func dismiss(_ job: Job) {
+        jobs.removeAll { $0.id == job.id }
+    }
+
     public func clearFinished() {
         jobs.removeAll { $0.isFinished }
     }

@@ -27,7 +27,7 @@ enum LocZhApp {
 
         // palette
         "All": "全部", "Search formats and tools": "搜索格式和工具", "Nothing matches": "没有匹配项", "Tool": "工具",
-        "Back": "返回", "Run": "运行", "navigate": "选择", "run": "运行", "switch": "切换", "close": "关闭",
+        "Back": "返回", "Run": "运行", "Dismiss": "关闭", "navigate": "选择", "run": "运行", "switch": "切换", "close": "关闭",
 
         // wheel
         "No conversions for this file": "此文件没有可用的转换", "No tools for this file": "此文件没有可用的工具", "More": "更多",

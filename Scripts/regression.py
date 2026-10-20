@@ -1882,6 +1882,24 @@ def _l10n_coverage(t):
     expect(not missing, "no Chinese entry for: " + "; ".join(missing[:25]) + (f" (+{len(missing) - 25} more)" if len(missing) > 25 else ""))
 
 
+@check("pdf.qpdf remove restrictions from an owner-only PDF with no password (optional)")
+def _(t):
+    """Many real-world PDFs open without a password but forbid copying/editing. They must unlock with NO password."""
+    t.need_engine("qpdf")
+    qpdf = shutil.which("qpdf") or "/opt/homebrew/bin/qpdf"
+    plain = t.fx("text1.pdf")
+    restricted = t.dir / "owner_restricted.pdf"
+    r = subprocess.run([qpdf, "--encrypt", "", "ownerpw", "256", "--extract=n", "--modify=none", "--", str(plain), str(restricted)],
+                       capture_output=True, text=True)
+    expect(r.returncode in (0, 3), f"could not build the fixture: {r.stderr}")
+    shown = subprocess.run([qpdf, "--show-encryption", str(restricted)], capture_output=True, text=True).stdout
+    expect("extract for any purpose: not allowed" in shown, f"fixture is not restricted: {shown}")
+    out = t.ok("run", "qpdf.decrypt", restricted)[0]                      # NO --param password
+    info = subprocess.run([qpdf, "--show-encryption", str(out)], capture_output=True, text=True)
+    expect("not encrypted" in (info.stdout + info.stderr), f"output is still encrypted: {info.stdout} {info.stderr}")
+    v_pdf(pages=1, has=("TOKENC1",))(t, [out])
+
+
 @check("cli.engines lists every optional engine")
 def _(t):
     r = t.mer("engines")
