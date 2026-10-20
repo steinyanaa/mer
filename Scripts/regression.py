@@ -1850,6 +1850,38 @@ def _(t):
     expect("convert.image.jpg" not in ids and "tool.image.resize" not in ids, "image actions offered for a PDF")
 
 
+@check("l10n.every UI/engine string has a Chinese translation")
+def _l10n_coverage(t):
+    """Static scan: Loc.t()/Loc.f() literals, and action titles / subtitles / parameter labels declared in MerCore,
+    must exist in the zh tables unless they are language-neutral names (JPG, M4A (AAC), Markdown ...)."""
+    src = ROOT / "Sources"
+    table_text = (src / "MerCore/Loc+Chinese.swift").read_text() + (src / "MerApp/LocZhApp.swift").read_text()
+    # keys: a string literal followed by a colon (dictionary key), possibly on the next line
+    keys = set(re.findall(r'"((?:[^"\\\n]|\\.)*)"\s*:\s*(?:\n\s*)?"', table_text))
+    patterns = re.findall(r'\("(\^[^"]+)",', table_text)
+    neutral = re.compile(r"^[A-Z0-9][A-Z0-9 ().+\-/,:]*$")                    # JPG, M4A (AAC), TAR.GZ, MP4 (HEVC) ...
+    names = {"Markdown", "WebP", "reStructuredText", "LaTeX", "PNG", "Mer", "English", "简体中文", "Pandoc", "FFmpeg"}
+    def covered(lit):
+        if lit in keys or lit in names or neutral.match(lit) or "{" in lit:
+            return True
+        return any(re.match(p, lit) for p in patterns)
+    missing = []
+    for f in sorted(src.glob("**/*.swift")):
+        if f.name.startswith("LocZh") or f.name.startswith("Loc+"):
+            continue
+        text = f.read_text()
+        for m in re.finditer(r'Loc\.(?:t|f)\("((?:[^"\\\n]|\\.)*)"', text):
+            if m.group(1) not in keys:
+                missing.append(f"{f.name}: Loc.t(\"{m.group(1)}\")")
+        if "MerCore" in f.parts:
+            for m in re.finditer(r'\b(?:title|subtitle|label): "([^"\\\n]+)"', text):
+                lit = m.group(1)
+                if "\\(" not in lit and not covered(lit):
+                    missing.append(f"{f.name}: {lit!r}")
+    missing = sorted(set(missing))
+    expect(not missing, "no Chinese entry for: " + "; ".join(missing[:25]) + (f" (+{len(missing) - 25} more)" if len(missing) > 25 else ""))
+
+
 @check("cli.engines lists every optional engine")
 def _(t):
     r = t.mer("engines")

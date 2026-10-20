@@ -63,7 +63,9 @@ public final class ActionRegistry: @unchecked Sendable {
         guard !q.isEmpty else { return actions }
         return actions.filter { a in
             a.title.lowercased().contains(q)
+                || a.displayTitle.lowercased().contains(q)
                 || a.id.lowercased().contains(q)
+                || a.category.displayTitle.lowercased().contains(q)
                 || a.category.title.lowercased().contains(q)
                 || (a.subtitle?.lowercased().contains(q) ?? false)
         }

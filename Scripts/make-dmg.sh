@@ -4,7 +4,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 VERSION="${1:-$(grep -A1 CFBundleShortVersionString Scripts/bundle.sh | grep -o '<string>[^<]*' | head -1 | sed 's/<string>//')}"
-./Scripts/bundle.sh release
+OUT_DIR=dist ./Scripts/bundle.sh release
 
 STAGE="$(mktemp -d)/Mer"
 mkdir -p "$STAGE"

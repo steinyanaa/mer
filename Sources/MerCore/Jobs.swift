@@ -28,7 +28,7 @@ public final class Job: ObservableObject, Identifiable {
 
     public var title: String {
         let name = inputs.count == 1 ? inputs[0].lastPathComponent : "\(inputs.count) files"
-        return "\(name) → \(action.title)"
+        return "\(name) → \(action.displayTitle)"
     }
 
     public var isFinished: Bool {

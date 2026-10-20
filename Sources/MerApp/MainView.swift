@@ -3,6 +3,7 @@ import AppKit
 import MerCore
 
 struct MainView: View {
+    @ObservedObject private var settings = AppSettings.shared
     @ObservedObject var center = JobCenter.shared
     @State private var targeted = false
     @State private var counts = (convert: 0, tool: 0)
@@ -31,7 +32,7 @@ struct MainView: View {
                 .padding(8).glassCard(Circle(), tint: Theme.accent.opacity(0.5))
             VStack(alignment: .leading, spacing: 0) {
                 Text("Mer").font(.title3.weight(.semibold))
-                Text("Offline file converter").font(.caption).foregroundStyle(.secondary)
+                Text(Loc.t("Offline file converter")).font(.caption).foregroundStyle(.secondary)
             }
             Spacer()
         }
@@ -43,10 +44,10 @@ struct MainView: View {
             Image(systemName: targeted ? "arrow.down.circle.fill" : "arrow.down.doc.fill")
                 .font(.system(size: 48)).symbolRenderingMode(.hierarchical).foregroundStyle(Theme.accent)
                 .contentTransition(.symbolEffect(.replace))
-            Text(targeted ? "Release to choose a format" : "Drop files here").font(.title2.weight(.semibold))
-            Text("Or hold ⇧ while dragging a file anywhere on your Mac to open the wheel.")
+            Text(targeted ? Loc.t("Release to choose a format") : Loc.t("Drop files here")).font(.title2.weight(.semibold))
+            Text(Loc.t("Or hold ⇧ while dragging a file anywhere on your Mac to open the wheel."))
                 .font(.callout).foregroundStyle(.secondary).multilineTextAlignment(.center)
-            Button("Choose Files…") { AppDelegate.shared.chooseFiles() }
+            Button(Loc.t("Choose Files…")) { AppDelegate.shared.chooseFiles() }
                 .controlSize(.large).tint(Theme.accent).glassButton(prominent: true).padding(.top, 4)
         }
         .padding(24)
@@ -63,11 +64,11 @@ struct MainView: View {
     private var summary: some View {
         GlassGroup(spacing: 10) {
             HStack(spacing: 10) {
-                stat("\(counts.convert)", "conversions")
-                stat("\(counts.tool)", "tools")
-                stat("\(Engines.catalogue.filter(\.installed).count)/\(Engines.catalogue.count)", "engines")
+                stat("\(counts.convert)", Loc.t("conversions"))
+                stat("\(counts.tool)", Loc.t("tools"))
+                stat("\(Engines.catalogue.filter(\.installed).count)/\(Engines.catalogue.count)", Loc.t("engines"))
                 Spacer()
-                Button { AppDelegate.shared.showSettings() } label: { Label("Settings", systemImage: "gearshape") }
+                Button { AppDelegate.shared.showSettings() } label: { Label(Loc.t("Settings"), systemImage: "gearshape") }
                     .controlSize(.large).glassButton()
             }
         }
@@ -85,16 +86,16 @@ struct MainView: View {
     private var jobs: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("Recent").font(.headline)
+                Text(Loc.t("Recent")).font(.headline)
                 Spacer()
                 if center.jobs.contains(where: \.isFinished) {
-                    Button("Clear") { withAnimation { center.clearFinished() } }.buttonStyle(.link)
+                    Button(Loc.t("Clear")) { withAnimation { center.clearFinished() } }.buttonStyle(.link)
                 }
             }
             if center.jobs.isEmpty {
                 VStack(spacing: 6) {
                     Image(systemName: "tray").font(.title).foregroundStyle(.tertiary)
-                    Text("Converted files appear here").foregroundStyle(.secondary).font(.callout)
+                    Text(Loc.t("Converted files appear here")).foregroundStyle(.secondary).font(.callout)
                 }
                 .frame(maxWidth: .infinity, minHeight: 90)
             } else {
@@ -124,6 +125,7 @@ struct MainView: View {
 // MARK: - Settings
 
 struct SettingsView: View {
+    @ObservedObject private var settings = AppSettings.shared
     enum Tab: String, CaseIterable, Identifiable {
         case general = "General", wheel = "Wheel", engines = "Engines", recipes = "Recipes"
         var id: String { rawValue }
@@ -176,7 +178,7 @@ struct SettingsView: View {
             HStack(spacing: 4) {
                 ForEach(Tab.allCases) { t in
                     Button { withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { tab = t } } label: {
-                        Label(t.rawValue, systemImage: t.symbol)
+                        Label(Loc.t(t.rawValue), systemImage: t.symbol)
                             .symbolRenderingMode(.hierarchical)
                             .font(.callout.weight(tab == t ? .semibold : .regular))
                             .padding(.horizontal, 14).padding(.vertical, 8)
@@ -236,42 +238,51 @@ private struct GeneralTab: View {
     @State private var cliMessage = ""
 
     var body: some View {
-        SettingsCard(title: "Output") {
-            SettingsRow(title: "Save results") {
+        SettingsCard(title: Loc.t("Language")) {
+            SettingsRow(title: Loc.t("Interface language")) {
+                Picker("", selection: $s.language) {
+                    Text(Loc.t("Follow System")).tag(AppLanguage.system)
+                    Text("English").tag(AppLanguage.english)
+                    Text("简体中文").tag(AppLanguage.chinese)
+                }.labelsHidden().fixedSize()
+            }
+        }
+        SettingsCard(title: Loc.t("Output")) {
+            SettingsRow(title: Loc.t("Save results")) {
                 Picker("", selection: $s.outputMode) {
-                    Text("Next to the original").tag(OutputMode.sameFolder)
-                    Text("In a specific folder").tag(OutputMode.custom)
+                    Text(Loc.t("Next to the original")).tag(OutputMode.sameFolder)
+                    Text(Loc.t("In a specific folder")).tag(OutputMode.custom)
                 }.labelsHidden().fixedSize()
             }
             if s.outputMode == .custom {
-                SettingsRow(title: s.customOutputPath.isEmpty ? "No folder chosen" : s.customOutputPath) {
-                    Button("Choose…") {
+                SettingsRow(title: s.customOutputPath.isEmpty ? Loc.t("No folder chosen") : s.customOutputPath) {
+                    Button(Loc.t("Choose…")) {
                         let p = NSOpenPanel(); p.canChooseFiles = false; p.canChooseDirectories = true; p.canCreateDirectories = true
                         if p.runModal() == .OK, let u = p.url { s.customOutputPath = u.path }
                     }.glassButton()
                 }
             }
             Divider().opacity(0.4)
-            SettingsRow(title: "Move originals to Trash", subtitle: "After a successful conversion") {
+            SettingsRow(title: Loc.t("Move originals to Trash"), subtitle: Loc.t("After a successful conversion")) {
                 Toggle("", isOn: $s.trashOriginals).labelsHidden().toggleStyle(.switch).tint(Theme.accent)
             }
-            SettingsRow(title: "Reveal results in Finder") {
+            SettingsRow(title: Loc.t("Reveal results in Finder")) {
                 Toggle("", isOn: $s.revealWhenDone).labelsHidden().toggleStyle(.switch).tint(Theme.accent)
             }
         }
-        SettingsCard(title: "System") {
-            SettingsRow(title: "Launch at login") {
+        SettingsCard(title: Loc.t("System")) {
+            SettingsRow(title: Loc.t("Launch at login")) {
                 Toggle("", isOn: $s.launchAtLogin).labelsHidden().toggleStyle(.switch).tint(Theme.accent)
             }
             Divider().opacity(0.4)
-            SettingsRow(title: "Command palette", subtitle: "Opens for the current Finder selection") {
+            SettingsRow(title: Loc.t("Command palette"), subtitle: Loc.t("Opens for the current Finder selection")) {
                 Text("⌥⌘T").font(.callout.monospaced().weight(.semibold))
                     .padding(.horizontal, 10).padding(.vertical, 4)
                     .glassCard(Capsule())
             }
             Divider().opacity(0.4)
-            SettingsRow(title: "Command-line tool", subtitle: cliMessage.isEmpty ? "Use Mer from Terminal as `mer`" : cliMessage) {
-                Button("Install `mer`") { cliMessage = AppDelegate.installCLI() }.glassButton()
+            SettingsRow(title: Loc.t("Command-line tool"), subtitle: cliMessage.isEmpty ? Loc.t("Use Mer from Terminal as `mer`") : cliMessage) {
+                Button(Loc.t("Install `mer`")) { cliMessage = AppDelegate.installCLI() }.glassButton()
             }
         }
     }
@@ -281,20 +292,23 @@ private struct WheelTab: View {
     @ObservedObject var s = AppSettings.shared
 
     var body: some View {
-        SettingsCard(title: "Drag wheel") {
-            SettingsRow(title: "Show the wheel while dragging files", subtitle: "Hold a key after you start dragging") {
+        SettingsCard(title: Loc.t("Drag wheel")) {
+            SettingsRow(title: Loc.t("Show the wheel while dragging files"), subtitle: Loc.t("Hold a key after you start dragging")) {
                 Toggle("", isOn: $s.wheelEnabled).labelsHidden().toggleStyle(.switch).tint(Theme.accent)
             }
         }
-        SettingsCard(title: "Keys") {
-            keyRow("Conversions", "Turn the file into another format", $s.convertKey)
+        SettingsCard(title: Loc.t("Keys")) {
+            keyRow(Loc.t("Conversions"), Loc.t("Turn the file into another format"), $s.convertKey)
             Divider().opacity(0.4)
-            keyRow("File tools", "Compress, crop, trim, merge …", $s.toolKey)
+            keyRow(Loc.t("File tools"), Loc.t("Compress, crop, trim, merge …"), $s.toolKey)
             Divider().opacity(0.4)
-            keyRow("File actions", "AirDrop, float, copy, move …", $s.fileKey)
+            keyRow(Loc.t("File actions"), Loc.t("AirDrop, float, copy, move …"), $s.fileKey)
         }
-        SettingsCard(title: "How it works") {
-            Text("Start dragging a file from Finder, then press a key. The wheel stays open until you drop on a slice or let go. Hover “More” to page through long lists, and press another key to switch layers.")
+        SettingsCard(title: Loc.t("Key test")) {
+            KeyTester()
+        }
+        SettingsCard(title: Loc.t("How it works")) {
+            Text(Loc.t("Start dragging a file from Finder, then press a key. The wheel stays open until you drop on a slice or let go. Hover “More” to page through long lists, and press another key to switch layers."))
                 .font(.callout).foregroundStyle(.secondary)
         }
     }
@@ -307,23 +321,51 @@ private struct WheelTab: View {
     }
 }
 
+/// Live check that Mer can see the modifier keys, independent of any drag.
+private struct KeyTester: View {
+    @ObservedObject private var s = AppSettings.shared
+
+    var body: some View {
+        TimelineView(.periodic(from: .now, by: 0.1)) { _ in
+            let flags = NSEvent.modifierFlags.intersection(.deviceIndependentFlagsMask)
+            let held = [("⇧ Shift", NSEvent.ModifierFlags.shift), ("⌘ Command", .command), ("⌃ Control", .control), ("⌥ Option", .option)]
+                .filter { flags.contains($0.1) }.map(\.0)
+            let layer = s.layer(for: flags)
+            HStack(spacing: 12) {
+                Image(systemName: held.isEmpty ? "keyboard" : "keyboard.fill")
+                    .font(.title2).foregroundStyle(held.isEmpty ? Color.secondary : Theme.accent)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(held.isEmpty ? Loc.t("Hold ⇧, ⌘ or ⌃ to check that Mer can see it") : held.joined(separator: " + "))
+                        .font(.body.weight(.medium))
+                    if let layer {
+                        Text(Loc.f("Opens the “%@” wheel", layer.title)).font(.caption).foregroundStyle(Theme.accentDeep)
+                    } else {
+                        Text(Loc.t("No wheel key is held")).font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+                Spacer()
+            }
+        }
+    }
+}
+
 private struct EnginesTab: View {
     @ObservedObject private var installer = EngineInstaller.shared
     @State private var tick = 0
 
     var body: some View {
         SettingsCard(title: nil) {
-            Text("Mer converts the common formats on its own. Optional engines unlock many more and are detected automatically.")
+            Text(Loc.t("Mer converts the common formats on its own. Optional engines unlock many more and are detected automatically."))
                 .font(.callout).foregroundStyle(.secondary)
             if installer.brewPath == nil {
-                Label("Installing engines needs Homebrew (brew.sh).", systemImage: "info.circle")
+                Label(Loc.t("Installing engines needs Homebrew (brew.sh)."), systemImage: "info.circle")
                     .font(.callout).foregroundStyle(Theme.accentDeep)
             }
         }
         ForEach(Engines.catalogue) { e in engineCard(e) }
         HStack {
             Spacer()
-            Button { ActionRegistry.shared.reload(); tick += 1 } label: { Label("Re-scan", systemImage: "arrow.clockwise") }.glassButton()
+            Button { ActionRegistry.shared.reload(); tick += 1 } label: { Label(Loc.t("Re-scan"), systemImage: "arrow.clockwise") }.glassButton()
         }
         .id(tick)
     }
@@ -336,22 +378,22 @@ private struct EnginesTab: View {
                     .font(.title3).foregroundStyle(e.installed ? Color.green : Color.secondary)
                 VStack(alignment: .leading, spacing: 3) {
                     Text(e.name).font(.body.weight(.semibold))
-                    Text(e.unlocks).font(.caption).foregroundStyle(.secondary)
+                    Text(e.displayUnlocks).font(.caption).foregroundStyle(.secondary)
                     switch state {
                     case .installing(let line):
                         HStack(spacing: 6) { ProgressView().controlSize(.small); Text(line).font(.caption2).foregroundStyle(.secondary).lineLimit(1) }
                             .padding(.top, 2)
                     case .failed(let msg):
-                        Text(msg).font(.caption).foregroundStyle(.red).lineLimit(3)
+                        Text(Loc.message(msg)).font(.caption).foregroundStyle(.red).lineLimit(3)
                     default: EmptyView()
                     }
                 }
                 Spacer(minLength: 8)
                 switch state {
-                case .installing: Button("Cancel") { installer.cancel(e) }.glassButton()
-                case .done: Text("Installed").font(.caption).foregroundStyle(.secondary)
+                case .installing: Button(Loc.t("Cancel")) { installer.cancel(e) }.glassButton()
+                case .done: Text(Loc.t("Installed")).font(.caption).foregroundStyle(.secondary)
                 default:
-                    Button("Install") { installer.install(e) }.tint(Theme.accent).glassButton(prominent: true)
+                    Button(Loc.t("Install")) { installer.install(e) }.tint(Theme.accent).glassButton(prominent: true)
                         .disabled(installer.brewPath == nil)
                 }
             }
@@ -364,21 +406,21 @@ private struct RecipesTab: View {
 
     var body: some View {
         SettingsCard(title: nil) {
-            Text("Recipes teach Mer new conversions by calling any command-line tool. Drop a `.json` file in the Recipes folder and press Reload.")
+            Text(Loc.t("Recipes teach Mer new conversions by calling any command-line tool. Drop a `.json` file in the Recipes folder and press Reload."))
                 .font(.callout).foregroundStyle(.secondary)
         }
-        SettingsCard(title: "Example") {
+        SettingsCard(title: Loc.t("Example")) {
             Text(RecipeInfo.example).font(.caption.monospaced()).textSelection(.enabled)
                 .frame(maxWidth: .infinity, alignment: .leading)
-            Text("Placeholders: {tool} {input} {output} {inputs} {name} {dir} {tmpdir} {param:key}")
+            Text(Loc.t("Placeholders: {tool} {input} {output} {inputs} {name} {dir} {tmpdir} {param:key}"))
                 .font(.caption).foregroundStyle(.secondary)
         }
-        SettingsCard(title: "\(count) custom recipe\(count == 1 ? "" : "s") loaded") {
+        SettingsCard(title: Loc.f(count == 1 ? "%d custom recipe loaded" : "%d custom recipes loaded", count)) {
             HStack(spacing: 10) {
-                Button("Create Example") { RecipeInfo.writeExample(); count = RecipeInfo.userCount() }.glassButton()
-                Button("Open Folder") { RecipeInfo.openFolder() }.glassButton()
+                Button(Loc.t("Create Example")) { RecipeInfo.writeExample(); count = RecipeInfo.userCount() }.glassButton()
+                Button(Loc.t("Open Folder")) { RecipeInfo.openFolder() }.glassButton()
                 Spacer()
-                Button("Reload") { ActionRegistry.shared.reload(); count = RecipeInfo.userCount() }.tint(Theme.accent).glassButton(prominent: true)
+                Button(Loc.t("Reload")) { ActionRegistry.shared.reload(); count = RecipeInfo.userCount() }.tint(Theme.accent).glassButton(prominent: true)
             }
         }
     }

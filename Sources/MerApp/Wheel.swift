@@ -19,7 +19,7 @@ final class WheelGlassModel: ObservableObject {
     struct Entry: Identifiable { let id: Int; let title: String; let symbol: String }
     @Published var entries: [Entry] = []
     @Published var hover: Int?
-    @Published var layerTitle = "Convert"
+    @Published var layerTitle = Loc.t("Convert")
     @Published var fileLabel = ""
     @Published var fileIcon: NSImage?
     @Published var hint = ""
@@ -302,7 +302,7 @@ final class WheelController {
         panel.setFrameOrigin(origin)
 
         model.fileIcon = NSWorkspace.shared.icon(forFile: files[0].path)
-        model.fileLabel = files.count == 1 ? files[0].lastPathComponent : "\(files.count) files"
+        model.fileLabel = files.count == 1 ? files[0].lastPathComponent : Loc.f("%d files", files.count)
         setLayer(layer)
 
         if !isVisible {
@@ -327,9 +327,9 @@ final class WheelController {
         case .convert, .tool:
             let kind: ActionKind = newLayer == .convert ? .convert : .tool
             all = ActionRegistry.shared.actions(for: files, kind: kind).map {
-                WheelItem(title: $0.title, symbol: $0.symbol ?? $0.category.symbol, payload: .action($0))
+                WheelItem(title: $0.displayTitle, symbol: $0.symbol ?? $0.category.symbol, payload: .action($0))
             }
-            model.emptyMessage = newLayer == .convert ? "No conversions for this file" : "No tools for this file"
+            model.emptyMessage = newLayer == .convert ? Loc.t("No conversions for this file") : Loc.t("No tools for this file")
         case .file:
             all = FileAction.allCases.map { WheelItem(title: $0.title, symbol: $0.symbol, payload: .file($0)) }
         }
@@ -343,8 +343,8 @@ final class WheelController {
     /// 9 slots per page: items plus ‹ Back / More › sectors where needed.
     static func paginate(_ items: [WheelItem], page: Int, slots: Int = 9) -> [WheelItem] {
         if items.count <= slots { return items }
-        let more = WheelItem(title: "More", symbol: nil, payload: .more)
-        let back = WheelItem(title: "Back", symbol: nil, payload: .back)
+        let more = WheelItem(title: Loc.t("More"), symbol: nil, payload: .more)
+        let back = WheelItem(title: Loc.t("Back"), symbol: nil, payload: .back)
         var start = 0
         for p in 0..<page { start += (p == 0 ? slots - 1 : slots - 2) }
         let firstPage = page == 0

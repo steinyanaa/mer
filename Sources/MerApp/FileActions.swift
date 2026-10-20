@@ -1,3 +1,4 @@
+import MerCore
 import AppKit
 import SwiftUI
 
@@ -9,13 +10,13 @@ enum FileAction: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .airdrop: return "AirDrop"
-        case .float: return "Float"
-        case .copy: return "Copy"
-        case .move: return "Move…"
-        case .copyPath: return "Copy Path"
-        case .terminal: return "Terminal"
-        case .reveal: return "Reveal"
+        case .airdrop: return Loc.t("AirDrop")
+        case .float: return Loc.t("Float")
+        case .copy: return Loc.t("Copy")
+        case .move: return Loc.t("Move…")
+        case .copyPath: return Loc.t("Copy Path")
+        case .terminal: return Loc.t("Terminal")
+        case .reveal: return Loc.t("Reveal")
         }
     }
 
@@ -43,14 +44,14 @@ enum FileAction: String, CaseIterable, Identifiable {
             let pb = NSPasteboard.general
             pb.clearContents()
             pb.writeObjects(urls as [NSURL])
-            HUDController.shared.toast("Copied \(urls.count == 1 ? urls[0].lastPathComponent : "\(urls.count) files")")
+            HUDController.shared.toast(Loc.f("Copied %@", urls.count == 1 ? urls[0].lastPathComponent : Loc.f("%d files", urls.count)))
         case .move:
             NSApp.activate(ignoringOtherApps: true)
             let panel = NSOpenPanel()
             panel.canChooseFiles = false
             panel.canChooseDirectories = true
             panel.canCreateDirectories = true
-            panel.prompt = "Move Here"
+            panel.prompt = Loc.t("Move Here")
             guard panel.runModal() == .OK, let dir = panel.url else { return }
             var moved = 0
             for url in urls {
@@ -64,12 +65,12 @@ enum FileAction: String, CaseIterable, Identifiable {
                 }
                 if (try? FileManager.default.moveItem(at: url, to: dest)) != nil { moved += 1 }
             }
-            HUDController.shared.toast("Moved \(moved) item\(moved == 1 ? "" : "s") to \(dir.lastPathComponent)")
+            HUDController.shared.toast(Loc.f(moved == 1 ? "Moved %d item to %@" : "Moved %d items to %@", moved, dir.lastPathComponent))
         case .copyPath:
             let pb = NSPasteboard.general
             pb.clearContents()
             pb.setString(urls.map(\.path).joined(separator: "\n"), forType: .string)
-            HUDController.shared.toast("Path copied")
+            HUDController.shared.toast(Loc.t("Path copied"))
         case .terminal:
             let first = urls[0]
             let dir = first.isDirectory ? first : first.deletingLastPathComponent()
@@ -136,6 +137,6 @@ private struct FloatCard: View {
         .onHover { hover = $0 }
         .onDrag { NSItemProvider(contentsOf: url) ?? NSItemProvider() }
         .onTapGesture(count: 2) { NSWorkspace.shared.open(url) }
-        .help("Drag me into any app · double-click to open")
+        .help(Loc.t("Drag me into any app · double-click to open"))
     }
 }

@@ -8,7 +8,12 @@ swift build -c "$CONFIG" --product MerApp
 swift build -c "$CONFIG" --product mer
 BIN=".build/$CONFIG"
 
-APP="dist/Mer.app"
+# OUT_DIR lets development builds go somewhere Spotlight/LaunchServices never see (e.g. OUT_DIR=/private/tmp/mer-dev),
+# so a test build can't show up as a second "Mer" next to the one in /Applications.
+OUT_DIR="${OUT_DIR:-dist}"
+mkdir -p "$OUT_DIR"
+touch "$OUT_DIR/.metadata_never_index"
+APP="$OUT_DIR/Mer.app"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN/MerApp" "$APP/Contents/MacOS/Mer"
@@ -30,10 +35,12 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
   <key>CFBundleExecutable</key><string>Mer</string>
   <key>CFBundleIconFile</key><string>AppIcon</string>
   <key>CFBundlePackageType</key><string>APPL</string>
-  <key>CFBundleShortVersionString</key><string>0.1.0</string>
+  <key>CFBundleShortVersionString</key><string>0.2.0</string>
   <key>CFBundleVersion</key><string>1</string>
   <key>LSMinimumSystemVersion</key><string>14.0</string>
   <key>LSUIElement</key><true/>
+  <key>CFBundleLocalizations</key><array><string>en</string><string>zh-Hans</string></array>
+  <key>CFBundleDevelopmentRegion</key><string>en</string>
   <key>NSHighResolutionCapable</key><true/>
   <key>NSAppleEventsUsageDescription</key>
   <string>Mer reads your Finder selection and uses Pages, Keynote and Numbers to convert their documents.</string>
@@ -58,6 +65,11 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
 </dict>
 </plist>
 PLIST
+
+# Finder → Services entry follows the system language
+mkdir -p "$APP/Contents/Resources/zh-Hans.lproj" "$APP/Contents/Resources/en.lproj"
+printf '"Convert with Mer" = "用 Mer 转换";\n' > "$APP/Contents/Resources/zh-Hans.lproj/ServicesMenu.strings"
+printf '"Convert with Mer" = "Convert with Mer";\n' > "$APP/Contents/Resources/en.lproj/ServicesMenu.strings"
 
 codesign --force --deep --sign - "$APP" >/dev/null 2>&1 || echo "codesign skipped"
 echo "Built $APP"

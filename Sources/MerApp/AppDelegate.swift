@@ -13,12 +13,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         AppDelegate.shared = self
+        Loc.registerAppTable(LocZhApp.table)
         NSApp.setActivationPolicy(.accessory)
         NSApp.servicesProvider = self
         NSUpdateDynamicServices()
 
         buildMainMenu()
         buildStatusItem()
+        // Where did the system actually place the menu-bar icon? (off-screen = squeezed out of a crowded bar)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in self?.logStatusItemPlacement() }
         _ = HUDController.shared
         if !CommandLine.arguments.contains("--demo-wheel") { DragWatcher.shared.start() }
 
@@ -42,7 +45,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Debug helpers: `--demo-hud <file>` runs a conversion + toast; `--demo-float <file>` pins a Float card.
         if let i = args.firstIndex(of: "--demo-hud"), i + 1 < args.count {
             let url = URL(fileURLWithPath: args[i + 1])
-            HUDController.shared.toast("Copied to clipboard")
+            HUDController.shared.toast(Loc.t("Copied to clipboard"))
             debugFocusReport()
             if let a = ActionRegistry.shared.actions(for: [url], kind: .convert).first {
                 JobCenter.shared.submit(a, inputs: [url])
@@ -52,6 +55,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if let i = args.firstIndex(of: "--demo-float"), i + 1 < args.count {
             FloatShelf.shared.add([URL(fileURLWithPath: args[i + 1])])
             debugFocusReport()
+            return
+        }
+        if let i = CommandLine.arguments.firstIndex(of: "--demo-palette"), i + 1 < CommandLine.arguments.count {
+            PaletteController.shared.present(files: [URL(fileURLWithPath: CommandLine.arguments[i + 1])])
             return
         }
         if CommandLine.arguments.contains("--open-settings") { showSettings(); return }
@@ -68,6 +75,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func application(_ application: NSApplication, open urls: [URL]) {
         PaletteController.shared.present(files: urls)
+    }
+
+    private func logStatusItemPlacement() {
+        guard let item = statusItem else { DragLog.write("status item: nil"); return }
+        let w = item.button?.window
+        let screen = w?.screen ?? NSScreen.main
+        DragLog.write("status item: isVisible=\(item.isVisible) window=\(w?.frame.debugDescription ?? "nil") windowVisible=\(w?.isVisible ?? false) screen=\(screen?.frame.debugDescription ?? "nil") activation=\(NSApp.activationPolicy().rawValue)")
+    }
+
+    /// Rebuilds everything AppKit owns (menus, window titles) after the interface language changes.
+    func languageChanged() {
+        buildMainMenu()
+        buildStatusMenu()
+        mainWindow?.title = "Mer"
+        settingsWindow?.title = Loc.t("Mer Settings")
     }
 
     // MARK: Windows
@@ -95,7 +117,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if settingsWindow == nil {
             let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 600, height: 620),
                              styleMask: [.titled, .closable, .fullSizeContentView], backing: .buffered, defer: false)
-            w.title = "Mer Settings"
+            w.title = Loc.t("Mer Settings")
             w.titlebarAppearsTransparent = true
             w.titleVisibility = .hidden
             w.isMovableByWindowBackground = true
@@ -111,10 +133,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: Status item & menus
 
     private func buildStatusItem() {
-        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-        if let button = statusItem.button {
-            button.image = NSImage(systemSymbolName: "circle.hexagongrid.fill", accessibilityDescription: "Mer")
+        if statusItem == nil {
+            statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+            statusItem.button?.image = NSImage(systemSymbolName: "circle.hexagongrid.fill", accessibilityDescription: "Mer")
         }
+        buildStatusMenu()
+    }
+
+    /// (Re)builds only the menu, so a language change never creates a second menu-bar icon.
+    private func buildStatusMenu() {
         let menu = NSMenu()
         func item(_ title: String, _ sel: Selector, key: String = "", mods: NSEvent.ModifierFlags = []) {
             let i = NSMenuItem(title: title, action: sel, keyEquivalent: key)
@@ -122,19 +149,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             i.target = self
             menu.addItem(i)
         }
-        item("Open Mer", #selector(openMain))
-        item("Convert Files…", #selector(chooseFilesAction))
-        item("Convert Finder Selection", #selector(convertSelectionAction), key: "t", mods: [.command, .option])
+        item(Loc.t("Open Mer"), #selector(openMain))
+        item(Loc.t("Convert Files…"), #selector(chooseFilesAction))
+        item(Loc.t("Convert Finder Selection"), #selector(convertSelectionAction), key: "t", mods: [.command, .option])
         menu.addItem(.separator())
-        let wheel = NSMenuItem(title: "Drag Wheel", action: #selector(toggleWheel(_:)), keyEquivalent: "")
+        let wheel = NSMenuItem(title: Loc.t("Drag Wheel"), action: #selector(toggleWheel(_:)), keyEquivalent: "")
         wheel.target = self
         wheel.state = AppSettings.shared.wheelEnabled ? .on : .off
         menu.addItem(wheel)
-        item("Test Wheel", #selector(testWheel))
-        item("Open Drag Log", #selector(openLog))
-        item("Settings…", #selector(openSettings), key: ",", mods: .command)
+        item(Loc.t("Test Wheel"), #selector(testWheel))
+        item(Loc.t("Open Drag Log"), #selector(openLog))
+        item(Loc.t("Settings…"), #selector(openSettings), key: ",", mods: .command)
         menu.addItem(.separator())
-        menu.addItem(NSMenuItem(title: "Quit Mer", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
+        menu.addItem(NSMenuItem(title: Loc.t("Quit Mer"), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
         statusItem.menu = menu
     }
 
@@ -143,16 +170,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let main = NSMenu()
         let appItem = NSMenuItem(); main.addItem(appItem)
         let appMenu = NSMenu(); appItem.submenu = appMenu
-        appMenu.addItem(NSMenuItem(title: "Quit Mer", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
+        appMenu.addItem(NSMenuItem(title: Loc.t("Quit Mer"), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
         let editItem = NSMenuItem(); main.addItem(editItem)
-        let edit = NSMenu(title: "Edit"); editItem.submenu = edit
-        edit.addItem(NSMenuItem(title: "Cut", action: #selector(NSText.cut(_:)), keyEquivalent: "x"))
-        edit.addItem(NSMenuItem(title: "Copy", action: #selector(NSText.copy(_:)), keyEquivalent: "c"))
-        edit.addItem(NSMenuItem(title: "Paste", action: #selector(NSText.paste(_:)), keyEquivalent: "v"))
-        edit.addItem(NSMenuItem(title: "Select All", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a"))
+        let edit = NSMenu(title: Loc.t("Edit")); editItem.submenu = edit
+        edit.addItem(NSMenuItem(title: Loc.t("Cut"), action: #selector(NSText.cut(_:)), keyEquivalent: "x"))
+        edit.addItem(NSMenuItem(title: Loc.t("Copy"), action: #selector(NSText.copy(_:)), keyEquivalent: "c"))
+        edit.addItem(NSMenuItem(title: Loc.t("Paste"), action: #selector(NSText.paste(_:)), keyEquivalent: "v"))
+        edit.addItem(NSMenuItem(title: Loc.t("Select All"), action: #selector(NSText.selectAll(_:)), keyEquivalent: "a"))
         let winItem = NSMenuItem(); main.addItem(winItem)
-        let win = NSMenu(title: "Window"); winItem.submenu = win
-        win.addItem(NSMenuItem(title: "Close", action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w"))
+        let win = NSMenu(title: Loc.t("Window")); winItem.submenu = win
+        win.addItem(NSMenuItem(title: Loc.t("Close"), action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w"))
         NSApp.mainMenu = main
     }
 
@@ -184,7 +211,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let p = NSOpenPanel()
         p.allowsMultipleSelection = true
         p.canChooseDirectories = true
-        p.prompt = "Choose"
+        p.prompt = Loc.t("Choose")
         if p.runModal() == .OK { PaletteController.shared.present(files: p.urls) }
     }
 
@@ -193,7 +220,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if front == "com.apple.finder" {
             let urls = FinderSelection.get()
             if !urls.isEmpty { PaletteController.shared.present(files: urls); return }
-            HUDController.shared.toast("Select a file in Finder first")
+            HUDController.shared.toast(Loc.t("Select a file in Finder first"))
             return
         }
         chooseFiles()
@@ -233,7 +260,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     static func installCLI() -> String {
         guard let cli = Bundle.main.url(forResource: "mer", withExtension: nil) else {
-            return "Not running from a packaged app — build with Scripts/bundle.sh."
+            return Loc.t("Not running from a packaged app — build with Scripts/bundle.sh.")
         }
         let dir = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".local/bin")
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
@@ -241,7 +268,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         try? FileManager.default.removeItem(at: link)
         do {
             try FileManager.default.createSymbolicLink(at: link, withDestinationURL: cli)
-            return "Installed at ~/.local/bin/mer (make sure it is on your PATH)."
+            return Loc.t("Installed at ~/.local/bin/mer (make sure it is on your PATH).")
         } catch { return "Failed: \(error.localizedDescription)" }
     }
 }

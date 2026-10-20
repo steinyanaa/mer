@@ -72,6 +72,7 @@ final class HUDController: ObservableObject {
 }
 
 struct HUDView: View {
+    @ObservedObject private var settings = AppSettings.shared
     @ObservedObject var hud: HUDController
     @ObservedObject var center: JobCenter
 
@@ -112,14 +113,14 @@ struct JobRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(job.title).font(.callout.weight(.medium)).lineLimit(1).truncationMode(.middle)
                 switch job.state {
-                case .queued: Text("Waiting…").font(.caption).foregroundStyle(.secondary)
+                case .queued: Text(Loc.t("Waiting…")).font(.caption).foregroundStyle(.secondary)
                 case .running: ProgressView(value: max(job.progress, 0.02)).progressViewStyle(.linear).tint(Theme.accent)
                         .animation(.easeOut(duration: 0.2), value: job.progress)
                 case .done:
-                    Text(job.outputs.count == 1 ? job.outputs[0].lastPathComponent : "\(job.outputs.count) files")
+                    Text(job.outputs.count == 1 ? job.outputs[0].lastPathComponent : Loc.f("%d files", job.outputs.count))
                         .font(.caption).foregroundStyle(.secondary).lineLimit(1)
-                case .failed(let msg): Text(msg).font(.caption).foregroundStyle(.red).lineLimit(compact ? 2 : 4)
-                case .cancelled: Text("Cancelled").font(.caption).foregroundStyle(.secondary)
+                case .failed(let msg): Text(Loc.message(msg)).font(.caption).foregroundStyle(.red).lineLimit(compact ? 2 : 4)
+                case .cancelled: Text(Loc.t("Cancelled")).font(.caption).foregroundStyle(.secondary)
                 }
             }
             Spacer(minLength: 0)
@@ -141,9 +142,9 @@ struct JobRow: View {
         switch job.state {
         case .done:
             Button { NSWorkspace.shared.activateFileViewerSelecting(job.outputs) } label: { Image(systemName: "magnifyingglass") }
-                .buttonStyle(.borderless).help("Reveal in Finder")
+                .buttonStyle(.borderless).help(Loc.t("Reveal in Finder"))
         case .running, .queued:
-            Button { job.cancel() } label: { Image(systemName: "xmark") }.buttonStyle(.borderless).help("Cancel")
+            Button { job.cancel() } label: { Image(systemName: "xmark") }.buttonStyle(.borderless).help(Loc.t("Cancel"))
         default: EmptyView()
         }
     }

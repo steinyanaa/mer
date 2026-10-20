@@ -13,7 +13,7 @@ enum ModifierChoice: String, CaseIterable, Identifiable {
         case .command: return "⌘ Command"
         case .control: return "⌃ Control"
         case .option: return "⌥ Option"
-        case .none: return "Off"
+        case .none: return Loc.t("Off")
         }
     }
 
@@ -38,6 +38,12 @@ final class AppSettings: ObservableObject {
     static let shared = AppSettings()
     private let d = UserDefaults.standard
 
+    @Published var language: AppLanguage {
+        didSet {
+            Loc.language = language
+            AppDelegate.shared?.languageChanged()
+        }
+    }
     @Published var wheelEnabled: Bool { didSet { d.set(wheelEnabled, forKey: "wheelEnabled") } }
     @Published var convertKey: ModifierChoice { didSet { d.set(convertKey.rawValue, forKey: "convertKey") } }
     @Published var toolKey: ModifierChoice { didSet { d.set(toolKey.rawValue, forKey: "toolKey") } }
@@ -60,6 +66,7 @@ final class AppSettings: ObservableObject {
         func choice(_ k: String, _ def: ModifierChoice) -> ModifierChoice {
             UserDefaults.standard.string(forKey: k).flatMap(ModifierChoice.init) ?? def
         }
+        language = Loc.language
         wheelEnabled = bool("wheelEnabled", true)
         convertKey = choice("convertKey", .shift)
         toolKey = choice("toolKey", .command)
@@ -95,7 +102,7 @@ final class AppSettings: ObservableObject {
 enum WheelLayer: CaseIterable {
     case convert, tool, file
     var title: String {
-        switch self { case .convert: return "Convert"; case .tool: return "Tools"; case .file: return "Actions" }
+        switch self { case .convert: return Loc.t("Convert"); case .tool: return Loc.t("Tools"); case .file: return Loc.t("Actions") }
     }
 }
 

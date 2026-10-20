@@ -18,6 +18,7 @@ Mer is an independent project. It is not affiliated with, or derived from the co
 - **Command palette** — <kbd>⌥⌘T</kbd> on the Finder selection, or Finder → Services → *Convert with Mer*. Searchable, keyboard driven.
 - **Command line** — `mer convert photo.heic --to jpg`, `mer run "Resize…" a.png --param size=800`, `mer list a.png`.
 - **Liquid Glass UI** on macOS 26, with a frosted-material fallback on macOS 14–15.
+- **English and 简体中文** — follows the system language by default; switch in Settings → General → Language (applies instantly).
 - **Queue with progress**, output-folder policy, optional "move originals to Trash".
 
 ### What works with no extra software
@@ -79,7 +80,7 @@ Sources/MerApp    menu-bar app: wheel, palette, HUD, settings
 
 ### Tests
 
-`./Scripts/regression.sh` generates its own fixtures and checks real outputs for every built-in engine (external engines are skipped when not installed). See [Scripts/README-testing.md](Scripts/README-testing.md).
+`./Scripts/regression.sh` generates its own fixtures and checks real outputs for every built-in engine (external engines are skipped when not installed), plus a check that every UI string has a Chinese translation. See [Scripts/README-testing.md](Scripts/README-testing.md).
 
 ## Known limitations
 
@@ -87,7 +88,8 @@ Sources/MerApp    menu-bar app: wheel, palette, HUD, settings
 - PDF → DOCX keeps text only, not layout. Documents with images or tables should go through `textutil` paths (RTF/ODT/DOC → DOCX), which cannot preserve hyperlinks — a macOS limitation.
 - The HUD and float cards get full-fidelity glass by overriding an undocumented `NSWindow` method (`hasMainAppearance`). If a future macOS removes it they fall back to frosted glass. This approach would not pass App Store review.
 - Tested on macOS 26 only. The drag wheel was verified end to end on a real drag; the float-card drag-out and several external-engine recipes (LibreOffice, JPEG XL, XCF) are untested.
-- A diagnostic log is written to `~/Library/Logs/Mer/drag.log` (menu bar → *Open Drag Log*).
+- A diagnostic log is written to `~/Library/Logs/Mer/drag.log` (menu bar → *Open Drag Log*). Settings → Wheel has a live **Key test** that shows whether Mer can see ⇧/⌘/⌃.
+- Keep only one copy of Mer installed. Two copies share a bundle id, and macOS may then activate the other one instead of launching the one you opened.
 
 ## License
 

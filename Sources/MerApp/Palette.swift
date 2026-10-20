@@ -122,6 +122,7 @@ final class PaletteModel: ObservableObject {
 }
 
 struct PaletteView: View {
+    @ObservedObject private var settings = AppSettings.shared
     @ObservedObject var model: PaletteModel
     @FocusState private var searchFocused: Bool
     @State private var appeared = false
@@ -156,7 +157,7 @@ struct PaletteView: View {
             Image(nsImage: NSWorkspace.shared.icon(forFile: model.files[0].path))
                 .resizable().frame(width: 34, height: 34)
             VStack(alignment: .leading, spacing: 1) {
-                Text(model.files.count == 1 ? model.files[0].lastPathComponent : "\(model.files.count) files")
+                Text(model.files.count == 1 ? model.files[0].lastPathComponent : Loc.f("%d files", model.files.count))
                     .font(.headline).lineLimit(1).truncationMode(.middle)
                 Text(model.files.count == 1 ? model.files[0].deletingLastPathComponent().path
                                             : model.files.map(\.lastPathComponent).prefix(3).joined(separator: ", "))
@@ -165,7 +166,7 @@ struct PaletteView: View {
             Spacer()
             if model.pending == nil {
                 Picker("", selection: $model.scope) {
-                    ForEach(PaletteModel.Scope.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+                    ForEach(PaletteModel.Scope.allCases, id: \.self) { Text(Loc.t($0.rawValue)).tag($0) }
                 }
                 .pickerStyle(.segmented).frame(width: 190).labelsHidden()
                 .onChange(of: model.scope) { model.selected = 0 }
@@ -180,7 +181,7 @@ struct PaletteView: View {
         VStack(spacing: 0) {
             HStack(spacing: 8) {
                 Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
-                TextField("Search formats and tools", text: $model.query)
+                TextField(Loc.t("Search formats and tools"), text: $model.query)
                     .textFieldStyle(.plain).font(.title3).focused($searchFocused)
                     .onSubmit { model.chooseSelected() }
                     .onChange(of: model.query) { model.selected = 0 }
@@ -192,7 +193,7 @@ struct PaletteView: View {
             let results = model.results
             if results.isEmpty {
                 Spacer()
-                Text("Nothing matches").foregroundStyle(.secondary)
+                Text(Loc.t("Nothing matches")).foregroundStyle(.secondary)
                 Spacer()
             } else {
                 ScrollViewReader { proxy in
@@ -213,7 +214,7 @@ struct PaletteView: View {
                 }
             }
             HStack(spacing: 12) {
-                hint("↑↓", "navigate"); hint("↩", "run"); hint("⇥", "switch"); hint("esc", "close")
+                hint("↑↓", Loc.t("navigate")); hint("↩", Loc.t("run")); hint("⇥", Loc.t("switch")); hint("esc", Loc.t("close"))
                 Spacer()
                 Text("\(results.count)").font(.caption.monospacedDigit()).foregroundStyle(.secondary)
             }
@@ -241,17 +242,17 @@ struct PaletteView: View {
                 .frame(width: 28)
                 .foregroundStyle(selected ? Theme.accentDeep : Theme.accent)
             VStack(alignment: .leading, spacing: 1) {
-                Text(a.title).font(.body.weight(.medium))
-                if let s = a.subtitle {
+                Text(a.displayTitle).font(.body.weight(.medium))
+                if let s = a.displaySubtitle {
                     Text(s).font(.caption).foregroundStyle(.secondary)
                 }
             }
             Spacer()
             if !a.params.isEmpty { Image(systemName: "slider.horizontal.3").font(.caption) }
-            Text(a.category.title).font(.caption2.weight(.medium))
+            Text(a.category.displayTitle).font(.caption2.weight(.medium))
                 .padding(.horizontal, 8).padding(.vertical, 3)
                 .background(selected ? Theme.accent.opacity(0.25) : Color.secondary.opacity(0.12), in: Capsule())
-            Text(a.kind == .convert ? "Convert" : "Tool").font(.caption2)
+            Text(a.kind == .convert ? Loc.t("Convert") : Loc.t("Tool")).font(.caption2)
                 .foregroundStyle(.secondary).frame(width: 48, alignment: .trailing)
         }
         .padding(.horizontal, 12).padding(.vertical, 8)
@@ -269,13 +270,13 @@ struct PaletteView: View {
 
     private func paramForm(_ action: MerAction) -> some View {
         VStack(alignment: .leading, spacing: 16) {
-            Label(action.title, systemImage: action.symbol ?? action.category.symbol)
+            Label(action.displayTitle, systemImage: action.symbol ?? action.category.symbol)
                 .font(.title3.weight(.semibold)).symbolRenderingMode(.hierarchical)
-            if let s = action.subtitle { Text(s).foregroundStyle(.secondary) }
+            if let s = action.displaySubtitle { Text(s).foregroundStyle(.secondary) }
             ForEach(action.params) { p in
                 VStack(alignment: .leading, spacing: 6) {
-                    Text(p.label).font(.caption).foregroundStyle(.secondary)
-                    TextField(p.label, text: Binding(get: { model.values[p.key] ?? "" }, set: { model.values[p.key] = $0 }))
+                    Text(p.displayLabel).font(.caption).foregroundStyle(.secondary)
+                    TextField(p.displayLabel, text: Binding(get: { model.values[p.key] ?? "" }, set: { model.values[p.key] = $0 }))
                         .textFieldStyle(.plain).padding(.horizontal, 14).padding(.vertical, 9)
                         .glassCard(Capsule())
                         .onSubmit { model.run(action) }
@@ -283,9 +284,9 @@ struct PaletteView: View {
             }
             Spacer()
             HStack {
-                Button("Back") { model.pending = nil }.keyboardShortcut(.cancelAction).glassButton()
+                Button(Loc.t("Back")) { model.pending = nil }.keyboardShortcut(.cancelAction).glassButton()
                 Spacer()
-                Button("Run") { model.run(action) }.keyboardShortcut(.defaultAction).tint(Theme.accent).glassButton(prominent: true)
+                Button(Loc.t("Run")) { model.run(action) }.keyboardShortcut(.defaultAction).tint(Theme.accent).glassButton(prominent: true)
             }
             .controlSize(.large)
         }
