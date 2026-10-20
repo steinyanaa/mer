@@ -17,3 +17,8 @@ hdiutil create -volname "Mer" -srcfolder "$STAGE" -ov -format UDZO -fs HFS+ "$DM
 ( cd dist && shasum -a 256 "Mer-$VERSION.dmg" > "Mer-$VERSION.dmg.sha256" )
 echo "Built $DMG"
 cat "dist/Mer-$VERSION.dmg.sha256"
+
+# The build output must not stay registered as a second "Mer" next to /Applications/Mer.app.
+LSR=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
+"$LSR" -u "$PWD/dist/Mer.app" >/dev/null 2>&1 || true
+rm -rf dist/Mer.app
