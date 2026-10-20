@@ -22,7 +22,7 @@ Mer is an independent project. It is not affiliated with, or derived from the co
 
 ### What works with no extra software
 
-45 conversions and 37 tools, built on system frameworks only:
+46 conversions and 37 tools, built on system frameworks only:
 
 | Area | Details |
 |---|---|

@@ -1821,7 +1821,8 @@ def _(t):
     r = t.mer("list", "--json")
     expect(r.rc == 0, f"{r}")
     rows = json.loads(r.out)
-    expect(len(rows) >= 100, f"only {len(rows)} actions registered")
+    # baseline = built-in engines only (83 at 0.1.0); external engines add more, so never assume they are installed
+    expect(len(rows) >= 80, f"only {len(rows)} actions registered")
     ids = [x["id"] for x in rows]
     expect(len(ids) == len(set(ids)), f"duplicate ids: {sorted({i for i in ids if ids.count(i) > 1})[:5]}")
     for x in rows:
